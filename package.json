@@ -1,0 +1,24 @@
+{
+  "name": "decky-tailscale-control",
+  "version": "0.3.13",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --noEmit && rollup -c",
+    "test": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "package": "npm run build && python3 scripts/package.py"
+  },
+  "dependencies": {
+    "@decky/api": "1.1.3",
+    "@decky/ui": "4.11.6",
+    "react-icons": "5.5.0"
+  },
+  "devDependencies": {
+    "@decky/rollup": "1.0.2",
+    "@types/node": "22.15.30",
+    "@types/react": "19.2.17",
+    "rollup": "4.62.0",
+    "typescript": "6.0.3"
+  }
+}
