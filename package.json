@@ -1,9 +1,19 @@
 {
-  "name": "decky-tailscale-control",
+  "name": "decky-tailscalecontrol-arm64",
   "version": "0.3.13",
   "private": true,
   "type": "module",
   "license": "MIT",
+  "description": "Decky Tailscale Control for Armada ARM64 Fedora/FEX handhelds",
+  "author": "liouly",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liouly/Decky-TailscaleControl-ARM64.git"
+  },
+  "bugs": {
+    "url": "https://github.com/liouly/Decky-TailscaleControl-ARM64/issues"
+  },
+  "homepage": "https://github.com/liouly/Decky-TailscaleControl-ARM64#readme",
   "scripts": {
     "build": "tsc --noEmit && rollup -c",
     "test": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
