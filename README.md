@@ -63,6 +63,7 @@ It should print `active`. Exit and re-enter the Decky plugin page after installa
 3. Select an **Exit Node** when required. The LAN-access switch applies only while an exit node is selected.
 4. Use **Advanced Connection Settings** only for a custom login server or explicit `tailscale up` flags. Applying it invokes `tailscale up --reset`, which restores unspecified preferences to their defaults.
 5. **Sign out of Tailscale** removes this device from the current Tailnet. After confirmation, select **Go to web login**. Steam opens Tailscale in a full-screen browser and the plugin closes it automatically when authorization succeeds.
+6. If an authorization page has expired or the login page reports success while the plugin remains on its login view, select **Refresh login URL**. This invalidates the old link, requests a fresh authorization URL, and keeps polling the connection state once per second.
 
 ## Safety Notes
 

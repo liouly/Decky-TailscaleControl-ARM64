@@ -63,6 +63,7 @@ systemctl is-active tailscale-decky-bridge.service
 3. 需要时选择 **Exit Node**。局域网访问开关仅在已选择出口节点时生效。
 4. **Advanced Connection Settings** 仅用于自定义登录服务器或明确的 `tailscale up` 参数。应用设置会执行 `tailscale up --reset`，未指定的偏好会恢复默认值。
 5. **Sign out of Tailscale** 会将本设备退出当前 Tailnet。确认退出后，选择 **Go to web login**；Steam 会打开 Tailscale 全屏网页登录，授权成功后插件会自动关闭该页面。
+6. 如果登录地址已失效，或网页显示登录成功但插件仍停留在登录页，请选择 **重新获取登录地址**。它会废弃旧链接、请求新的授权地址，并每秒检查一次连接状态。
 
 ## 注意事项
 

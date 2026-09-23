@@ -14,7 +14,7 @@ SERVICE_NAME = "tailscaled.service"
 SYSTEMCTL = "/usr/bin/systemctl"
 TAILSCALE = "/usr/bin/tailscale"
 SERVICE_ACTIONS = {"start", "stop", "restart"}
-NETWORK_ACTIONS = {"up", "down", "set_exit", "apply_settings", "logout"}
+NETWORK_ACTIONS = {"up", "down", "reauth", "set_exit", "apply_settings", "logout"}
 
 
 def send_response(client, payload):
@@ -53,6 +53,8 @@ def network_command(action, settings):
         return [TAILSCALE, "down"]
     if action == "up":
         return [TAILSCALE, "up", "--timeout=20s"]
+    if action == "reauth":
+        return [TAILSCALE, "up", "--force-reauth", "--timeout=20s"]
     if action == "logout":
         return [TAILSCALE, "logout"]
     if action == "set_exit":

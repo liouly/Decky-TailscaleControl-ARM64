@@ -1,6 +1,6 @@
 import {call, definePlugin} from "@decky/api";
 import {ButtonItem, ConfirmModal, DropdownItem, Navigation, PanelSection, PanelSectionRow, showModal, staticClasses, TextField, ToggleField} from "@decky/ui";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {FaExternalLinkAlt, FaNetworkWired, FaSignOutAlt, FaSlidersH, FaSync} from "react-icons/fa";
 
 type Address = {interface: string; ipv4: string[]; ipv6: string[]};
@@ -15,35 +15,6 @@ type ActionResponse = {ok: true; status: Status} | {ok: false; status: Status; m
 type Preferences = {allow_lan_access: boolean; login_server: string; custom_flags: string};
 
 const PREFERENCES_KEY = "decky-tailscale-control-preferences";
-let webLoginMonitor: number | undefined;
-
-function stopWebLoginMonitor() {
-  if (webLoginMonitor !== undefined) {
-    window.clearInterval(webLoginMonitor);
-    webLoginMonitor = undefined;
-  }
-}
-
-function startWebLoginMonitor() {
-  stopWebLoginMonitor();
-  const checkLogin = async () => {
-    try {
-      const status = await call<[], Status>("get_status");
-      if (status.connection.state === "connected") {
-        stopWebLoginMonitor();
-        Navigation.NavigateBack();
-      }
-    } catch {
-      // A temporary Decky RPC failure should not stop the login monitor.
-    }
-  };
-  void checkLogin();
-  const timer = window.setInterval(() => void checkLogin(), 1000);
-  webLoginMonitor = timer;
-  window.setTimeout(() => {
-    if (webLoginMonitor === timer) stopWebLoginMonitor();
-  }, 5 * 60 * 1000);
-}
 
 const connectionLabels: Record<Status["connection"]["state"], string> = {
   connected: "已连接",
@@ -134,10 +105,9 @@ function LoginPanel({authUrl, serviceActive, working, preparing, message, onRequ
 
   return <PanelSection title="登录 Tailscale">
     <PanelSectionRow>此设备已退出当前账号。完成授权后会自动返回控制页面。</PanelSectionRow>
-    {authUrl ?
-      <ButtonItem childrenContainerWidth="max" disabled={working} onClick={openWebLogin}><FaExternalLinkAlt /> 去网页登录</ButtonItem> :
-      preparing ? <PanelSectionRow>正在准备登录地址...</PanelSectionRow> :
-      <ButtonItem childrenContainerWidth="max" disabled={working || !serviceActive} onClick={onRequestUrl}><FaSync /> 获取登录地址</ButtonItem>}
+    {authUrl ? <ButtonItem childrenContainerWidth="max" disabled={working} onClick={openWebLogin}><FaExternalLinkAlt /> 去网页登录</ButtonItem> : null}
+    {preparing ? <PanelSectionRow>正在准备登录地址...</PanelSectionRow> :
+      <ButtonItem childrenContainerWidth="max" disabled={working || !serviceActive} onClick={onRequestUrl}><FaSync /> 重新获取登录地址</ButtonItem>}
     <ButtonItem childrenContainerWidth="max" disabled={working} onClick={onRefresh}><FaSync /> 刷新状态</ButtonItem>
     <PanelSectionRow><small style={{minHeight: "1.4em"}}>操作结果：{message || "等待登录授权"}</small></PanelSectionRow>
   </PanelSection>;
@@ -148,9 +118,10 @@ function Content() {
   const [message, setMessage] = useState("正在读取 Tailscale 状态...");
   const [working, setWorking] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
+  const [webLoginOpen, setWebLoginOpen] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       const next = await call<[], Status>("get_status");
       setStatus(next);
@@ -158,17 +129,32 @@ function Content() {
     } catch (error) {
       setMessage(`读取状态失败：${String(error)}`);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void refresh();
     const timer = setInterval(() => void refresh(), 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     if (logoutPending && status?.connection.backend_state === "NeedsLogin") setLogoutPending(false);
   }, [logoutPending, status?.connection.backend_state]);
+
+  const needsLogin = Boolean(status && (logoutPending || status.connection.backend_state === "NeedsLogin"));
+
+  useEffect(() => {
+    if (!needsLogin) return;
+    const timer = window.setInterval(() => void refresh(), 1000);
+    return () => window.clearInterval(timer);
+  }, [needsLogin, refresh]);
+
+  useEffect(() => {
+    if (webLoginOpen && status?.connection.state === "connected") {
+      setWebLoginOpen(false);
+      Navigation.NavigateBack();
+    }
+  }, [webLoginOpen, status?.connection.state]);
 
   const handleResult = (result: ActionResponse, successMessage: string) => {
     setStatus(result.status);
@@ -187,7 +173,7 @@ function Content() {
     }
   };
 
-  const networkAction = async (action: "up" | "down" | "set_exit" | "apply_settings" | "logout", settings: Record<string, unknown>, successMessage: string): Promise<boolean> => {
+  const networkAction = async (action: "up" | "down" | "reauth" | "set_exit" | "apply_settings" | "logout", settings: Record<string, unknown>, successMessage: string): Promise<boolean> => {
     setWorking(true);
     try {
       const result = await call<[string, Record<string, unknown>], ActionResponse>("network_action", action, settings);
@@ -250,16 +236,15 @@ function Content() {
 
   const controlsDisabled = working || !status.service.installed;
   const connected = status.connection.state === "connected" || status.connection.state === "connecting";
-  const needsLogin = logoutPending || status.connection.backend_state === "NeedsLogin";
   if (needsLogin) return <LoginPanel
     authUrl={status.tailscale.auth_url}
     serviceActive={status.service.active}
     working={working}
     preparing={logoutPending && !status.tailscale.auth_url}
     message={message}
-    onRequestUrl={() => void networkAction("up", {}, "正在获取登录地址")}
+    onRequestUrl={() => void networkAction("reauth", {}, "已生成新的登录地址，旧地址已失效")}
     onRefresh={() => void refresh()}
-    onOpenWebLogin={startWebLoginMonitor}
+    onOpenWebLogin={() => setWebLoginOpen(true)}
   />;
   const exitOptions = [
     {data: "", label: "不使用出口节点"},

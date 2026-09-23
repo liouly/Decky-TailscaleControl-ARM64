@@ -258,7 +258,7 @@ class TailscaleController:
         return self.snapshot()
 
     def network_action(self, action: str, settings: Optional[dict] = None) -> dict:
-        if action not in {"up", "down", "set_exit", "apply_settings", "logout"}:
+        if action not in {"up", "down", "reauth", "set_exit", "apply_settings", "logout"}:
             raise ValueError("Unsupported network action")
         payload = {"action": action, "settings": settings or {}}
         self._bridge_request(payload)

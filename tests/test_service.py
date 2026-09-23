@@ -71,6 +71,11 @@ class TailscaleControllerTests(unittest.TestCase):
             ],
         )
 
+    def test_reauth_is_allowed(self):
+        with patch.object(TailscaleController, "_bridge_request") as bridge_request:
+            self.controller.network_action("reauth")
+        bridge_request.assert_called_once_with({"action": "reauth", "settings": {}})
+
     def test_logout_waits_for_needs_login_after_up_times_out(self):
         self.runner.status_responses = [
             {"BackendState": "Running", "Self": {"Online": True}},

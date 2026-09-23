@@ -23,6 +23,12 @@ class BridgeCommandTests(unittest.TestCase):
     def test_logout_uses_fixed_command(self):
         self.assertEqual(bridge.network_command("logout", {}), [bridge.TAILSCALE, "logout"])
 
+    def test_reauth_uses_fixed_command(self):
+        self.assertEqual(
+            bridge.network_command("reauth", {}),
+            [bridge.TAILSCALE, "up", "--force-reauth", "--timeout=20s"],
+        )
+
     def test_custom_flags_are_not_shell_input(self):
         command = bridge.network_command("apply_settings", {"custom_flags": "--accept-routes --shields-up=false"})
         self.assertEqual(command, [bridge.TAILSCALE, "up", "--reset", "--timeout=20s", "--accept-routes", "--shields-up=false"])
